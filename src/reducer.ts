@@ -1,39 +1,68 @@
-import { Loop, liftState } from 'redux-loop';
+import { Cmd, Loop, liftState, loop } from 'redux-loop';
 import { compose } from 'redux';
 import { Actions } from './types/actions.type';
+import { Picture } from './types/picture.type';
+import fakedatas from './fake-datas.json';
+import { none, Option, some } from 'fp-ts/lib/Option';
+import { cmdFetch } from './commands';
+import { Pictures } from './types/api.type';
+import { fetchCatsRequest } from './actions';
+export type State = {
+  counter: number,
+  pictures: Pictures,
+  selectedPicture?: Option<Picture>,
+};
 
-export type State = unknown; // TODO : Update this type !
 
-export const defaultState = {}; // TODO : Update this value !
+const INITIAL_PICTURE_NUMBER = 3
+export const defaultState: State = {
+  counter: INITIAL_PICTURE_NUMBER,
+  pictures: { kind: 'SUCCESS', pictures: [] },
+  selectedPicture: none,  
+};
+
+
 
 export const reducer = (state: State | undefined, action: Actions): State | Loop<State> => {
   if (!state) return defaultState; // mandatory by redux
   switch (action.type) {
     case 'INCREMENT':
-      throw 'Not Implemented';
+      return loop(
+        { ...state, counter: state.counter + 1},
+        Cmd.action(fetchCatsRequest(state.counter + 1))
+      );
     case 'DECREMENT':
-      throw 'Not Implemented';
+      if (state.counter <= 3) {
+        return state;
+      }
+      return loop(
+        { ...state, counter: state.counter - 1},
+        Cmd.action(fetchCatsRequest(state.counter - 1))
+      );
     case 'SELECT_PICTURE':
-      throw 'Not Implemented';
+      return { ...state, selectedPicture: some(action.picture) };
     case 'CLOSE_MODAL':
-      throw 'Not Implemented';
+      return { ...state, selectedPicture: none };
     case 'FETCH_CATS_REQUEST':
-      throw 'Not Implemented';
+      return loop(
+        { ...state, pictures: { kind: 'LOADING' }},
+        cmdFetch(action)
+      );
     case 'FETCH_CATS_COMMIT':
-      throw 'Not Implemented';
+      return { ...state, pictures: { kind: 'SUCCESS', pictures: action.payload as Picture[] } };
     case 'FETCH_CATS_ROLLBACK':
-      throw 'Not Implemented';
+      return { ...state, pictures: { kind: 'FAILURE', error: action.error.message } };
   }
 };
 
 export const counterSelector = (state: State) => {
-  throw 'Not Implemented';
+  return state.counter;
 };
 export const picturesSelector = (state: State) => {
-  throw 'Not Implemented';
+  return state.pictures;
 };
 export const getSelectedPicture = (state: State) => {
-  throw 'Not Implemented';
+  return state.selectedPicture;
 };
 
 export default compose(liftState, reducer);
