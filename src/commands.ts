@@ -7,7 +7,18 @@ export const cmdFetch = (action: FetchCatsRequest) =>
     () => {
       return fetch(action.path, {
         method: action.method,
-      }).then(checkStatus);
+      })
+      .then(checkStatus)
+      .then(response => response.json())
+      .then(data => {
+        const pictures = data.hits.map((hit: any) => ({
+          previewFormat: hit.previewURL,
+          webFormat: hit.webformatURL,
+          author: hit.user,
+          largeFormat: hit.largeImageURL,
+        }));
+        return pictures;
+      });
     },
     {
       successActionCreator: fetchCatsCommit, // (equals to (payload) => fetchCatsCommit(payload))
